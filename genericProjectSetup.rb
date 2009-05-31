@@ -172,58 +172,167 @@ HTTP_ERRORS = [Timeout::Error,
                Net::HTTPHeaderSyntaxError,
                Net::ProtocolError]
 
-SMTP_SERVER_ERRORS = [TimeoutError,
-                      IOError,
-                      Net::SMTPUnknownError,
-                      Net::SMTPServerBusy,
-                      Net::SMTPAuthenticationError]
+#SMTP_SERVER_ERRORS = [TimeoutError,
+#                      IOError,
+#                      Net::SMTPUnknownError,
+#                      Net::SMTPServerBusy,
+#                      Net::SMTPAuthenticationError]
 
-SMTP_CLIENT_ERRORS = [Net::SMTPFatalError,
-                      Net::SMTPSyntaxError]
+#SMTP_CLIENT_ERRORS = [Net::SMTPFatalError,
+#                      Net::SMTPSyntaxError]
 
-SMTP_ERRORS = SMTP_SERVER_ERRORS + SMTP_CLIENT_ERRORS
+#SMTP_ERRORS = SMTP_SERVER_ERRORS + SMTP_CLIENT_ERRORS
+}
+
+# =================
+# Sessions - Initializer
+# =================
+initializer 'session_store.rb', <<-EOS.gsub(/^  /, '')
+  ActionController::Base.session = { :session_key => '_#{(1..6).map { |x| (65 + rand(26)).chr }.join}_session', :secret => '#{(1..40).map { |x| (65 + rand(26)).chr }.join}' }
+  ActionController::Base.session_store = :active_record_store
+  EOS
+
+# =================
+# Create the rails configuration - environment.rb
+# =================
+file 'app/controllers/application_controller.rb', 
+%q{class ApplicationController < ActionController::Base
+
+  helper :all
+
+  layout ""
+
+  protect_from_forgery
+
+  filter_parameter_logging :password
+
+end
+}
+
+# =================
+# Create the rails configuration - environment.rb
+# =================
+file 'config/environment.rb', 
+%q{# Be sure to restart your server when you modify this file
+
+# Specifies gem version of Rails to use when vendor/rails is not present
+RAILS_GEM_VERSION = '2.3.2' unless defined? RAILS_GEM_VERSION
+
+# Bootstrap the Rails environment, frameworks, and default configuration
+require File.join(File.dirname(__FILE__), 'boot')
+
+Rails::Initializer.run do |config|
+  # Settings in config/environments/* take precedence over those specified here.
+
+  # Only load the plugins named here, in the order given. By default, all plugins 
+  # in vendor/plugins are loaded in alphabetical order.
+  # :all can be used as a placeholder for all plugins not explicitly named
+  # config.plugins = [ :exception_notification, :ssl_requirement, :all ]
+  
+  # Add the vendor/gems/*/lib directories to the LOAD_PATH
+  config.load_paths += Dir.glob(File.join(RAILS_ROOT, 'vendor', 'gems', '*', 'lib'))
+  
+  # Make Time.zone default to the specified zone, and make Active Record store time values
+  # in the database in UTC, and return them converted to the specified local zone.
+  # Run "rake -D time" for a list of tasks for finding time zone names. Comment line to use default local time.
+  config.time_zone = 'UTC'
+
+  # The internationalization framework can be changed to have another default locale (standard is :en) or more load paths.
+  # All files from config/locales/*.rb,yml are added automatically.
+  # config.i18n.load_path << Dir[File.join(RAILS_ROOT, 'my', 'locales', '*.{rb,yml}')]
+  config.i18n.default_locale = :en
+
+  # Use SQL instead of Active Record's schema dumper when creating the test database.
+  # This is necessary if your schema can't be completely dumped by the schema dumper,
+  # like if you have constraints or database-specific column types
+  # config.active_record.schema_format = :sql
+
+  # Activate observers that should always be running
+  # Please note that observers generated using script/generate observer need to have an _observer suffix
+  # config.active_record.observers = :cacher, :garbage_collector, :forum_observer
+end
 }
 
 # =================
 # Create the mysql configuration
 # =================
-file 'config/database.yml', 
-%q{<% PASSWORD_FILE = File.join(RAILS_ROOT, '..', '..', 'shared', 'config', 'dbpassword') %>
+file("config/database.yml") do
 
-development:
-  adapter: mysql
-  database: <%= PROJECT_NAME %>_development
-  username: root
-  password: 
-  host: localhost
-  encoding: utf8
+  @project_name_db = ask("What's the name of the project? (used to create databases for development, test, staging and production)")
+  @staging_password = ask("What's the staging password?") 
+  @production_password = ask("What's the production password?") 
+
+  database_yml = "development:\n"
+  database_yml<<"  adapter: mysql\n"
+  database_yml<<"  database: #{@project_name_db}_development\n"
+  database_yml<<"  username: #{@project_name_db}_admin\n"
+  database_yml<<"  password: #{@project_name_db}_admin\n"
+  database_yml<<"  host: localhost\n"
+  database_yml<<"  encoding: utf8\n"
+  database_yml<<"  socket: /tmp/mysql.sock\n"
+  database_yml<<"  pool: 5\n"
   
-test:
-  adapter: mysql
-  database: <%= PROJECT_NAME %>_test
-  username: root
-  password: 
-  host: localhost
-  encoding: utf8
+database_yml<<"test:\n"
+  database_yml<<"  adapter: mysql\n"
+  database_yml<<"  database: #{@project_name_db}_test\n"
+  database_yml<<"  username: #{@project_name_db}_admin\n"
+  database_yml<<"  password: #{@project_name_db}_admin\n"
+  database_yml<<"  host: localhost\n"
+  database_yml<<"  encoding: utf8\n"
+  database_yml<<"  socket: /tmp/mysql.sock\n"
+  database_yml<<"  pool: 5\n"
   
-staging:
-  adapter: mysql
-  database: <%= PROJECT_NAME %>_staging
-  username: <%= PROJECT_NAME %>
-  password: <%= File.read(PASSWORD_FILE).chomp if File.readable? PASSWORD_FILE %>
-  host: localhost
-  encoding: utf8
-  socket: /var/lib/mysql/mysql.sock
+database_yml<<"staging:\n"
+  database_yml<<"  adapter: mysql\n"
+  database_yml<<"  database: #{@project_name_db}_staging\n"
+  database_yml<<"  username: #{@project_name_db}\n"
+  database_yml<<"  password: #{@staging_password}\n"
+  database_yml<<"  host: localhost\n"
+  database_yml<<"  encoding: utf8\n"
+  database_yml<<"  socket: /tmp/mysql.sock\n"
+  database_yml<<"  pool: 5\n"
   
-production:
-  adapter: mysql
-  database: <%= PROJECT_NAME %>_production
-  username: <%= PROJECT_NAME %>
-  password: <%= File.read(PASSWORD_FILE).chomp if File.readable? PASSWORD_FILE %>
-  host: localhost
-  encoding: utf8
-  socket: /var/lib/mysql/mysql.sock
-}
+database_yml<<"production:\n"
+  database_yml<<"  adapter: mysql\n"
+  database_yml<<"  database: #{@project_name_db}_production\n"
+  database_yml<<"  username: #{@project_name_db}\n"
+  database_yml<<"  password: #{@production_password}\n"
+  database_yml<<"  host: localhost\n"
+  database_yml<<"  encoding: utf8\n"
+  database_yml<<"  socket: /tmp/mysql.sock\n"
+  database_yml<<"  pool: 5\n"
+  
+  database_yml
+end
+
+# =================
+# Create a script to create databases and users
+# =================
+file("db/scripts/createDatabaseUsers.sql") do
+
+  createDatabaseUsersString = "CREATE DATABASE #{@project_name_db}_development character set utf8;\n"
+  createDatabaseUsersString<<"GRANT ALL PRIVILEGES ON #{@project_name_db}_development.* to '#{@project_name_db}_admin'@'localhost' IDENTIFIED BY '#{@project_name_db}_admin' WITH GRANT OPTION;\n"
+  createDatabaseUsersString<<"GRANT SELECT, INSERT, UPDATE, DELETE ON #{@project_name_db}_development.* to '#{@project_name_db}'@'localhost' IDENTIFIED BY '#{@project_name_db}' WITH GRANT OPTION;\n\n"
+
+  createDatabaseUsersString<<"CREATE DATABASE #{@project_name_db}_test character set utf8;\n"
+  createDatabaseUsersString<<"GRANT ALL PRIVILEGES ON #{@project_name_db}_test.* to '#{@project_name_db}_admin'@'localhost' IDENTIFIED BY '#{@project_name_db}_admin' WITH GRANT OPTION;\n"
+  createDatabaseUsersString<<"GRANT SELECT, INSERT, UPDATE, DELETE ON #{@project_name_db}_test.* to '#{@project_name_db}'@'localhost' IDENTIFIED BY '#{@project_name_db}' WITH GRANT OPTION;\n\n"
+
+  if(yes?("Do you want to script the creation of the staging database?")) then
+    createDatabaseUsersString<<"-- Staging\n"
+    createDatabaseUsersString<<"CREATE DATABASE #{@project_name_db}_staging character set utf8;\n"
+    createDatabaseUsersString<<"GRANT ALL PRIVILEGES ON #{@project_name_db}_staging.* to '#{@project_name_db}_admin'@'localhost' IDENTIFIED BY '#{@project_name_db}_admin' WITH GRANT OPTION;\n"
+    createDatabaseUsersString<<"GRANT SELECT, INSERT, UPDATE, DELETE ON #{@project_name_db}_staging.* to '#{@project_name_db}'@'localhost' IDENTIFIED BY '#{@staging_password}' WITH GRANT OPTION;\n\n"
+  end
+
+  if(yes?("Do you want to script the creation of the production database?")) then
+    createDatabaseUsersString<<"-- Production\n"
+    createDatabaseUsersString<<"CREATE DATABASE #{@project_name_db}_production character set utf8;\n"
+    createDatabaseUsersString<<"GRANT ALL PRIVILEGES ON #{@project_name_db}_production.* to '#{@project_name_db}Admin'@'localhost' IDENTIFIED BY '#{@project_name_db}_admin' WITH GRANT OPTION;\n"
+    createDatabaseUsersString<<"GRANT SELECT, INSERT, UPDATE, DELETE ON #{@project_name_db}_production.* to '#{@project_name_db}'@'localhost' IDENTIFIED BY '#{@production_password}' WITH GRANT OPTION;"
+  end 
+  createDatabaseUsersString
+end
 
 # =================
 # Create a blank README
@@ -257,3 +366,10 @@ run "cap local externals:setup"
 # Add everything to git
 git :add => "."
 git :commit => "-m 'initial commit'"
+
+# Set up sessions
+#  rake 'db:create'
+rake("db:sessions:create")
+
+run "echo 'Use the script in db/scripts to create the database manually'"
+run "echo 'Then run - rake db:migrate'"
