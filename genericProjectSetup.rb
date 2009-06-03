@@ -65,11 +65,7 @@ vendor/plugins/project_search:
   :type: git 
   :repository: git://github.com/37signals/project_search.git
   :revision: 5d243711fbbd69ac08ba86418316bd15cffa0642
- vendor/plugins/open_id_authentication:
-  :type: git 
-  :repository: git://github.com/rails/open_id_authentication.git 
-  :revision: 079b91f70602814c98d4345e198f743bb56b76b5
- vendor/plugins/authlogic
+vendor/plugins/authlogic:
   :type: git 
   :repository: git://github.com/binarylogic/authlogic.git
   :revision: v2.0.13
