@@ -123,7 +123,7 @@ file "config/locales/en-US.yml",
 }
 
 file "config/locales/es-ES.yml", 
-  %q{"en-US":
+  %q{"en-ES":
 
   activerecord:
     errors:
@@ -196,7 +196,7 @@ file 'app/controllers/application_controller.rb',
 
   helper :all
 
-  layout ""
+  layout "application"
 
   protect_from_forgery
 
