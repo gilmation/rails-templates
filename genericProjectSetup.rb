@@ -304,7 +304,7 @@ end
 # =================
 # Create a script to create databases and users
 # =================
-file("db/scripts/createDatabaseUsers.sql") do
+file("db/scripts/createDatabaseAndUsers.sql") do
 
   createDatabaseUsersString = "CREATE DATABASE #{@project_name_db}_development character set utf8;\n"
   createDatabaseUsersString<<"GRANT ALL PRIVILEGES ON #{@project_name_db}_development.* to '#{@project_name_db}_admin'@'localhost' IDENTIFIED BY '#{@project_name_db}_admin' WITH GRANT OPTION;\n"
@@ -363,9 +363,9 @@ run "cap local externals:setup"
 git :add => "."
 git :commit => "-m 'initial commit'"
 
-# Set up sessions
+# Set up the migration for sessions
 #  rake 'db:create'
 rake("db:sessions:create")
 
-run "echo 'Use the script in db/scripts to create the database manually'"
+run "echo 'Use the script in db/scripts/createDatabaseAndUsers.sql to create the database manually'"
 run "echo 'Then run - rake db:migrate'"
