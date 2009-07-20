@@ -1,12 +1,12 @@
 # Generic Project Setup
 
-This generic project template is based on (among others) the templates at http://github.com/drnic/rails-templates
+This generic project template is based on (among others) the templates at [DrNic's templates](http://github.com/drnic/rails-templates)
 
 ## Dependencies 
 
  * [Capistrano](http://github.com/jamis/capistrano)
  * [Mysql](http://www.mysql.com)
- * [Mysql Gem or equivalent]
+ * Mysql Gem or equivalent
  * [GIT](http://git-scm.com)
 
 ## What you get
